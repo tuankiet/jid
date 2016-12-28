@@ -1,14 +1,15 @@
 package jid
 
 import (
-	"github.com/mattn/go-runewidth"
-	"github.com/nsf/termbox-go"
-	"github.com/nwidger/jsoncolor"
-
 	"fmt"
 	"io/ioutil"
 	"regexp"
 	"strings"
+
+	log "github.com/Sirupsen/logrus"
+	"github.com/mattn/go-runewidth"
+	"github.com/nsf/termbox-go"
+	"github.com/nwidger/jsoncolor"
 )
 
 type Terminal struct {
@@ -44,37 +45,65 @@ func (t *Terminal) draw(attr *TerminalDrawAttributes, keymode bool) error {
 
 	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
 
-	fs := t.prompt + query
-	cs := complete
 	y := t.defaultY
 
-	t.drawln(0, 0, fs+cs, []([]int){[]int{len(fs), len(fs) + len(cs)}})
+	t.drawFilterLine(query, complete)
 
 	if len(candidates) > 0 {
 		y = t.drawCandidates(0, t.defaultY, candidateidx, candidates)
 	}
 
-	if keymode {
-		for idx, row := range rows {
-			if i := idx - contentOffsetY; i >= 0 {
-				t.drawln(0, i+y, row, nil)
-			}
-		}
-	} else {
-		cellsArr, err := t.rowsToCells(rows)
-		if err != nil {
-			return err
-		}
+	//if keymode {
+	//for idx, row := range rows {
+	//if i := idx - contentOffsetY; i >= 0 {
+	//t.drawln(0, i+y, row, nil)
+	//}
+	//}
+	//} else {
+	cellsArr, err := t.rowsToCells(rows)
+	if err != nil {
+		//return err
+		log.WithFields(log.Fields{
+			"animal": "walrus",
+		}).Info("A walrus appears")
+	}
 
-		for idx, cells := range cellsArr {
-			if i := idx - contentOffsetY; i >= 0 {
-				t.drawCells(0, i+y, cells)
-			}
+	for idx, cells := range cellsArr {
+		if i := idx - contentOffsetY; i >= 0 {
+			t.drawCells(0, i+y, cells)
 		}
 	}
+	//}
 	termbox.SetCursor(len(t.prompt)+attr.CursorOffsetX, 0)
 
 	termbox.Flush()
+	return nil
+}
+
+func (t *Terminal) drawFilterLine(qs string, complete string) error {
+	fs := t.prompt + qs
+	cs := complete
+	str := fs + cs
+
+	color := termbox.ColorDefault
+	backgroundColor := termbox.ColorDefault
+
+	var cells []termbox.Cell
+	match := []int{len(fs), len(fs) + len(cs)}
+
+	var c termbox.Attribute
+	for i, s := range str {
+		c = color
+		if i >= match[0]+1 && i < match[1] {
+			c = termbox.ColorGreen
+		}
+		cells = append(cells, termbox.Cell{
+			Ch: s,
+			Fg: c,
+			Bg: backgroundColor,
+		})
+	}
+	t.drawCells(0, 0, cells)
 	return nil
 }
 
@@ -160,7 +189,10 @@ func (t *Terminal) rowsToCells(rows []string) ([][]termbox.Cell, error) {
 
 	err := formatter.Format(ioutil.Discard, []byte(strings.Join(rows, "\n")))
 	if err != nil {
-		return nil, err
+		//return nil, err
+		log.WithFields(log.Fields{
+			"err": "hogehoge",
+		}).Info("A walrus appears")
 	}
 
 	return cells, nil
